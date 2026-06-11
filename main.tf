@@ -29,7 +29,7 @@ module "spring_service" {
   machine_type  = "e2-medium"
   target_tags   = ["ssh", "spring-node", "node-exporter"]
   logstash_ip   = module.elasticsearch_and_logstash.private_ip
-  service_account_email = "github-action@lessonplatform-495307.iam.gserviceaccount.com"
+  service_account_email = var.service_account_email
 
   depends_on = [
     module.mysql_service,

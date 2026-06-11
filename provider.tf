@@ -1,4 +1,4 @@
 provider "google" {
-  project = "lessonplatform-495307"
-  region  = "asia-northeast3"
+  project = var.project_id
+  region  = var.region
 }
