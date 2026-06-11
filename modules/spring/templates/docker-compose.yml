@@ -1,0 +1,29 @@
+services:
+  spring-app:
+    image: asia-northeast3-docker.pkg.dev/lessonplatform-495307/notification-server-repo/spring-app:latest
+    container_name: spring-app
+    ports:
+      - "8080:8080"
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/usr/share/filebeat/logs:ro
+
+  # 호스트 자원 수집을 위한 Node Exporter
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: always
+    pid: "host"
+    network_mode: "host"
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - "--path.rootfs=/host"

@@ -1,0 +1,83 @@
+#!/bin/bash
+
+${common_bootstrap_content}
+
+${docker_init_content}
+
+# docker-compose.yml 복사
+cat << 'EOF' > docker-compose.yml
+${docker_compose_content}
+EOF
+
+
+# prometheus.yml 생성
+if [ ! -z "${prometheus_content}" ]; then
+cat << 'EOF' > prometheus.yml
+${prometheus_content}
+EOF
+fi
+
+# Grafana 프로비저닝 폴더 세팅
+mkdir -p ./grafana/datasources
+mkdir -p ./grafana/dashboards
+mkdir -p ./grafana/dashboards_json
+
+# Grafana 데이터소스 파일 생성
+cat << 'EOF' > ./grafana/datasources/datasource.yml
+apiVersion: 1
+
+datasources:
+  - name: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+EOF
+
+# Grafana Dashboard 공급 설정 파일 생성
+cat << 'EOF' > ./grafana/dashboards/dashboard.yml
+apiVersion: 1
+
+providers:
+  - name: "Default Provider"
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
+EOF
+
+
+# Grafana Dashboard 설정 복사
+echo "Downloading Grafana Dashboards..."
+
+# ① Node Exporter (ID: 1860)
+curl -s https://grafana.com/api/dashboards/1860/revisions/37/download > ./grafana/dashboards_json/node-exporter.json
+
+# ② Kafka Exporter (ID: 7589)
+cat << 'EOF' > ./grafana/dashboards_json/kafka-exporter.json
+${kafka_dashboard_content}
+EOF
+
+# ③ MySQL Exporter (ID: 7362)
+cat << 'EOF' > ./grafana/dashboards_json/mysql-exporter.json
+${mysql_dashboard_content}
+EOF
+
+# ④ JVM Exporter (ID: 4701)
+cat << 'EOF' > ./grafana/dashboards_json/jvm-dashboard.json
+${jvm_dashboard_content}
+EOF
+
+# 기존에 가동 중이던 컨테이너가 있다면 안전하게 내리고, 최신 이미지를 당긴 후 올립니다.
+sudo docker-compose down || true
+sudo docker-compose pull || true
+sudo docker-compose up -d
+
+echo "========================================================================="
+echo " Successfully initialized and started ${app_name} infrastructure! "
+echo "========================================================================="

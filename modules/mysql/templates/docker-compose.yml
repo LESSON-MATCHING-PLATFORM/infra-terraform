@@ -1,0 +1,52 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-server
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fillinv
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql_init.sql:/docker-entrypoint-initdb.d/init.sql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    networks:
+      - db-net
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.0
+    container_name: mysqld-exporter
+    restart: always
+    environment:
+      - DATA_SOURCE_NAME="exporter:exporter_password@(db:3306)/"
+    command:
+      - "--mysqld.username=exporter:exporter_password"
+      - "--mysqld.address=db:3306"
+    ports:
+      - "9104:9104"
+    depends_on:
+      - db
+    networks:
+      - db-net
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: always
+    volumes:
+      - /:/host:ro,rslave
+    pid: "host"
+    network_mode: "host"
+    command:
+      - "--path.rootfs=/host"
+
+volumes:
+  mysql_data:
+
+networks:
+  db-net:
+    driver: bridge

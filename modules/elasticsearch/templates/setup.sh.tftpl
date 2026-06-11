@@ -1,0 +1,22 @@
+#!/bin/bash
+
+${common_bootstrap_content}
+
+${docker_init_content}
+
+cat << 'EOF' > docker-compose.yml
+${docker_compose_content}
+EOF
+
+cat << 'EOF' > logstash.conf
+${logstash_conf_content}
+EOF
+
+# 기존에 가동 중이던 컨테이너가 있다면 안전하게 내리고, 최신 이미지를 당긴 후 올립니다.
+sudo docker-compose down || true
+sudo docker-compose pull || true
+sudo docker-compose up -d
+
+echo "========================================================================="
+echo " Successfully initialized and started ${app_name} infrastructure! "
+echo "========================================================================="

@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # 1. Spring 애플리케이션 수집 (Actuator)
+  - job_name: "spring-backend"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["${spring_server_ip}:8080"]
+
+  # 2. 카프카 클러스터 상태 수집 (Kafka Exporter)
+  - job_name: "kafka-exporter"
+    static_configs:
+      - targets: ["${kafka_server_ip}:9308"]
+
+  # 3. 데이터베이스 상태 수집 (MySQL Exporter)
+  - job_name: "mysql-database"
+    static_configs:
+      - targets: ["${mysql_server_ip}:9104"]
+
+  # 4. 전 서버 하드웨어 자원 통합 수집 (Node Exporter)
+  - job_name: "gcp-infra-nodes"
+    static_configs:
+      - targets:
+          - "${spring_server_ip}:9100"
+          - "${kafka_server_ip}:9100"
+          - "${mysql_server_ip}:9100"

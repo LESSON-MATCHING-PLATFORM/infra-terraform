@@ -1,0 +1,128 @@
+#!/bin/bash
+# =========================================================================
+# GCP VM 인프라 통합 자동 구축 스크립트 (Terraform 템플릿 통합본)
+# =========================================================================
+
+# 1. 시스템 업데이트 및 필수 패키지 설치 (Docker 최신 공식 REPO 기반)
+if ! command -v docker &> /dev/null; then
+  sudo apt-get update
+  sudo apt-get install -y ca-certificates curl gnupg lsb-release
+
+  sudo mkdir -p /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+  sudo apt-get update
+  sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+  # docker-compose v2 명령어 호환성을 위해 심볼릭 링크 생성
+  sudo ln -s /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+fi
+
+# 2. 애플리케이션 맞춤형 디렉토리 설정
+# 테라폼 변수(${username}, ${app_name})를 동적으로 주입받아 각기 다른 폴더를 만듭니다.
+APP_DIR="/home/${username}/${app_name}"
+mkdir -p $APP_DIR
+cd $APP_DIR
+
+# 3. 설정 파일 동적 생성 (값이 존재할 때만 파일 작성)
+
+# 3-1. docker-compose.yml 생성 (모든 VM 필수)
+cat << 'EOF' > docker-compose.yml
+${docker_compose_content}
+EOF
+
+# 3-2. prometheus.yml 생성 (모니터링 VM 등에서만 사용)
+if [ ! -z "${prometheus_content}" ]; then
+cat << 'EOF' > prometheus.yml
+${prometheus_content}
+EOF
+fi
+
+# 4-1. 그라파나 프로비저닝 폴더 세팅
+mkdir -p /home/${username}/monitoring/grafana/datasources
+mkdir -p /home/${username}/monitoring/grafana/dashboards
+mkdir -p /home/${username}/monitoring/grafana/dashboards_json
+
+# 4-2. 데이터소스 파일 생성
+cat << 'EOF' > /home/${username}/monitoring/grafana/datasources/datasource.yml
+apiVersion: 1
+
+datasources:
+  - name: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+EOF
+
+# 4-3. 대시보드 공급 설정 파일 생성
+cat << 'EOF' > /home/${username}/monitoring/grafana/dashboards/dashboard.yml
+apiVersion: 1
+
+providers:
+  - name: "Default Provider"
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
+EOF
+
+# 4-4. 대시보드 JSON 파일 자동 다운로드 (wget / curl)
+echo "Downloading Grafana Dashboards..."
+
+# ① Node Exporter (ID: 1860)
+curl -s https://grafana.com/api/dashboards/1860/revisions/37/download > /home/${username}/monitoring/grafana/dashboards_json/node-exporter.json
+
+# ② Kafka Exporter (ID: 7589)
+cat << 'EOF' > /home/${username}/monitoring/grafana/dashboards_json/kafka-exporter.json
+${kafka_dashboard_content}
+EOF
+
+# ③ MySQL Exporter (ID: 7362)
+cat << 'EOF' > /home/${username}/monitoring/grafana/dashboards_json/mysql-exporter.json
+${mysql_dashboard_content}
+EOF
+
+# ④ JVM Exporter (ID: 4701)
+cat << 'EOF' > /home/${username}/monitoring/grafana/dashboards_json/jvm-dashboard.json
+${jvm_dashboard_content}
+EOF
+
+# 권한 맞춤
+chown -R ${username}:${username} /home/${username}/monitoring
+
+# 5. logstash 설정 파일 복사
+cat << 'EOF' > /home/${username}/monitoring/logstash.conf
+${logstash_conf_content}
+EOF
+
+# 5. GCP 환경 인증 및 권한 조정
+if command -v gcloud &> /dev/null; then
+  gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
+fi
+
+sudo chown -R ${username}:${username} $APP_DIR
+sudo usermod -aG docker ${username}
+
+# 5. [개선] 멱등성 보장 및 컨테이너 안전 재가동
+# 기존에 가동 중이던 컨테이너가 있다면 안전하게 내리고, 최신 이미지를 당긴 후 올립니다.
+sudo docker-compose down || true
+sudo docker-compose pull || true
+sudo docker-compose up -d
+
+# 6. 유저에게 docker 권한 부여
+sudo usermod -aG docker ${username}
+sudo newgrp docker
+
+echo "========================================================================="
+echo " Successfully initialized and started ${app_name} infrastructure! "
+echo "========================================================================="
