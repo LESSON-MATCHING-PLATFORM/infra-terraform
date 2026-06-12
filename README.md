@@ -170,3 +170,15 @@ service_account_email = "your-service-account@your-gcp-project-id.iam.gserviceac
 ## 🔒 보안 및 주의사항
 - `terraform.tfvars`와 `.tfstate` 파일에는 인프라의 민감한 IP 및 구성 정보가 포함되어 있으므로 **절대 원격 레포지토리(GitHub 등)에 커밋하지 마세요.**
 - 현재 `firewall.tf`에 의해 일부 서비스의 포트가 전체(`0.0.0.0/0`)로 열려 있습니다. 실 서비스(Production) 환경에 배포할 때는 반드시 내부 VPC 통신이나 로드밸런서를 통한 접속만 허용하도록 **보안 규칙을 엄격하게 수정**해야 합니다.
+
+---
+
+## 🌱 향후 개선 과제 (Future Work)
+현재 인프라 아키텍처에서 한 단계 더 나아가, 서비스의 안정성과 보안성을 높이기 위해 다음과 같은 고도화를 계획하고 있습니다.
+
+1. **Remote Backend 도입 (상태 파일 원격 관리)**
+   - 현재 로컬에 저장되는 `terraform.tfstate` 상태 파일을 Google Cloud Storage(GCS)로 이관하여, 여러 작업자가 인프라 코드를 동시에 안전하게 협업 및 배포할 수 있는 환경을 구축할 예정입니다.
+2. **네트워크 보안 강화 (Private Subnet & Bastion Host)**
+   - MySQL과 Kafka 등 내부 통신만 필요한 핵심 서비스들을 퍼블릭 인터넷에서 완전히 격리시키고, 오직 Cloud NAT와 Bastion Host(점프 서버)를 통해서만 접근할 수 있도록 방화벽(`firewall.tf`)과 네트워크 구조를 재설계할 계획입니다.
+3. **가용성 및 트래픽 분산 (High Availability)**
+   - 현재 포트폴리오 수준의 비용 최적화를 위해 단일 VM으로 구성된 서버들을 향후 트래픽 증가에 대비해 GCP Managed Instance Group(MIG)이나 Kubernetes(GKE)로 마이그레이션하여 Auto-scaling이 가능한 구조로 발전시킬 여지를 열어두고 있습니다.
