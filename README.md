@@ -5,6 +5,54 @@
 ## 🏗️ Architecture & Services
 본 인프라 코드는 다음과 같은 마이크로서비스 및 모니터링/로그 생태계를 단일 VPC 내에 구축합니다.
 
+```mermaid
+graph LR
+    subgraph GCP["Google Cloud Platform (VPC)"]
+        direction TB
+        
+        %% Core Application
+        Spring["Spring Boot App\n(Backend)"]
+        
+        %% Data & Messaging
+        DB["MySQL\n(Database)"]
+        Kafka["Kafka\n(Message Broker)"]
+        
+        %% Logging & Search
+        subgraph ELK["Log & Search"]
+            Logstash["Logstash"]
+            ES["Elasticsearch"]
+            Logstash --> ES
+        end
+        
+        %% Monitoring
+        subgraph Monitoring["Monitoring Stack"]
+            Prometheus["Prometheus"]
+            Grafana["Grafana"]
+            Kibana["Kibana"]
+            
+            Prometheus --> Grafana
+            ES -.-> Kibana
+        end
+        
+        %% Core Connections
+        Spring --> DB
+        Spring --> Kafka
+        Spring --> Logstash
+        
+        %% Monitoring Connections (dotted)
+        DB -. "Metrics" .-> Prometheus
+        Kafka -. "Metrics" .-> Prometheus
+        Spring -. "Metrics" .-> Prometheus
+        
+        %% Secret Manager
+        SM["Secret Manager\n(Dynamic IPs)"]
+        Spring -. "Fetch IPs" .-> SM
+    end
+    
+    %% Terraform Automation
+    TF["Terraform\n(local-exec)"] -- "Update IPs" --> SM
+```
+
 - **Spring Boot Application**: 핵심 비즈니스 로직 처리 서버
 - **MySQL**: 메인 관계형 데이터베이스
 - **Kafka**: 비동기 메시지 브로커 (이벤트 처리용)
