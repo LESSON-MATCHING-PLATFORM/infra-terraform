@@ -80,6 +80,26 @@ graph LR
 
 ---
 
+## 📂 디렉토리 구조 (Directory Structure)
+이 레포지토리는 코드의 재사용성과 유지보수성을 극대화하기 위해 테라폼 **모듈(Module) 패턴**을 채택하여 구성되었습니다.
+
+```text
+📦 terraform
+ ┣ 📂 modules/
+ ┃ ┣ 📂 spring/        # Spring Boot 애플리케이션 서버 프로비저닝
+ ┃ ┣ 📂 mysql/         # 메인 데이터베이스 서버 구성
+ ┃ ┣ 📂 kafka/         # 메시지 브로커 (Kafka, Zookeeper) 서버 구성
+ ┃ ┣ 📂 elasticsearch/ # 검색 엔진(Elasticsearch) 및 로그 수집기(Logstash) 구성
+ ┃ ┣ 📂 monitoring/    # 모니터링 스택 (Prometheus, Grafana, Kibana) 구성
+ ┃ ┗ 📂 common/        # 각 VM에서 공통으로 사용되는 초기화 스크립트 모음 (Docker 설치, 계정 생성 등)
+ ┣ 📜 main.tf          # 전체 모듈을 조립하고 배포 순서(depends_on) 및 IP 주입 파이프라인을 정의하는 메인 파일
+ ┣ 📜 firewall.tf      # 서비스 간 통신을 위한 네트워크 방화벽(Firewall) 규칙 정의
+ ┣ 📜 variables.tf     # 전역 변수 선언 (설명 및 타입 정의)
+ ┗ 📜 provider.tf      # GCP 연동을 위한 클라우드 프로바이더 설정
+```
+
+---
+
 ## 🚀 시작하기 전 준비사항 (Prerequisites)
 
 이 코드를 실행하기 전에 아래 도구들이 설치되어 있어야 합니다.
