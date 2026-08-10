@@ -1,6 +1,6 @@
 # Spring 고유 static IP
 resource "google_compute_address" "spring_ip" {
-  name = "spring-static-ip"
+  name = var.static_ip_name
 }
 
 # Spring VM 인스턴스 정의

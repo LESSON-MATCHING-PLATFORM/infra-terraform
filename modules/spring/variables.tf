@@ -42,6 +42,11 @@ variable "instance_name" {
   description = ""
 }
 
+variable "static_ip_name" {
+  type        = string
+  description = "GCP static external IP address resource name for this spring service"
+}
+
 variable "spring_server_image" {
   type        = string
   description = "spring service image"
