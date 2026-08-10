@@ -32,7 +32,9 @@ resource "null_resource" "update_all_secrets" {
 
   depends_on = [
     module.mysql_service,
-    module.kafka_service
+    module.kafka_service,
+    module.backend_service,
+    module.notification_service
   ]
 
   triggers = {
@@ -42,6 +44,10 @@ resource "null_resource" "update_all_secrets" {
     kafka_private = module.kafka_service.private_ip
     kafka_public  = module.kafka_service.public_ip
 
+    backend_private      = module.backend_service.private_ip
+    backend_public       = module.backend_service.public_ip
+    notification_private = module.notification_service.private_ip
+    notification_public  = module.notification_service.public_ip
   }
 
   provisioner "local-exec" {
@@ -54,6 +60,14 @@ resource "null_resource" "update_all_secrets" {
     printf "${module.kafka_service.public_ip}" | \
     gcloud secrets versions add KAFKA_BOOTSTRAP_SERVERS --data-file=-
     echo "✅ KAFKA VM IP 시크릿 버전 갱신 완료"
+
+    printf "${module.backend_service.private_ip}" | \
+    gcloud secrets versions add BACKEND_HOST --data-file=-
+    echo "✅ Backend VM IP 시크릿 버전 갱신 완료"
+
+    printf "${module.notification_service.private_ip}" | \
+    gcloud secrets versions add NOTIFICATION_HOST --data-file=-
+    echo "✅ Notification VM IP 시크릿 버전 갱신 완료"
 
     EOT
   }
