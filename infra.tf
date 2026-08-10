@@ -3,6 +3,12 @@ data "google_secret_manager_secret_version" "db_password" {
   version = "latest"
 }
 
+locals {
+  backend_database_name      = "fillinv_backend"
+  notification_database_name = "fillinv_notification"
+  mysql_instance_zone        = "asia-northeast3-a"
+}
+
 module "kafka_service" {
   source        = "./modules/kafka"
   username      = var.username
@@ -57,6 +63,30 @@ resource "null_resource" "update_all_secrets" {
     EOT
   }
 
+}
+
+resource "null_resource" "ensure_service_databases" {
+  depends_on = [
+    module.mysql_service
+  ]
+
+  triggers = {
+    mysql_private         = module.mysql_service.private_ip
+    backend_database      = local.backend_database_name
+    notification_database = local.notification_database_name
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+
+    gcloud compute ssh ${var.username}@mysql \
+      --project ${var.project_id} \
+      --zone ${local.mysql_instance_zone} \
+      --command "docker exec mysql-server sh -c 'mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE DATABASE IF NOT EXISTS ${local.backend_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS ${local.notification_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"'"
+    echo "✅ Backend/Notification DB 분리 생성 확인 완료"
+
+    EOT
+  }
 }
 
 resource "null_resource" "update_backend_host_secret" {
