@@ -1,0 +1,86 @@
+services:
+  # 1. Kafka Broker (KRaft Mode)
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://${external_ip}:9094
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    networks:
+      - kafka-net
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: kafka-exporter
+    command: ["--kafka.server=kafka:9092"]
+    ports:
+      - "9308:9308"
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+    restart: always
+
+  kafka-init:
+    image: apache/kafka:3.7.0
+    container_name: kafka-init
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "echo 'Waiting for Kafka...';
+      # 카프카가 준비될 때까지 대기
+      until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list; do
+        sleep 2;
+      done;
+
+      echo 'Initializing topics (Delete and Re-create)...';
+      # 기존 토픽 삭제 (초기화 목적)
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --delete --topic test-topic --if-exists;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --delete --topic metrics-topic --if-exists;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --delete --topic payment-topic --if-exists;
+
+      # 잠시 대기 (삭제 처리가 카프카 내부에서 완료될 시간)
+      sleep 2;
+
+      echo 'Creating fresh topics...';
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --topic test-topic --partitions 3 --replication-factor 1;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --topic metrics-topic --partitions 3 --replication-factor 1;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --topic payment-topic --partitions 3 --replication-factor 1;
+
+      echo 'Successfully initialized and created topics';"
+    networks:
+      - kafka-net
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: always
+    volumes:
+      - /:/host:ro,rslave
+    pid: "host"
+    network_mode: "host"
+    command:
+      - "--path.rootfs=/host"
+
+volumes:
+  kafka_data:
+    driver: local
+
+networks:
+  kafka-net:
+    driver: bridge

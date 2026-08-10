@@ -31,3 +31,8 @@ variable "instance_name" {
     type        = string
     description = ""
 }
+
+variable "mysql_root_password" {
+    type        = string
+    description = "mysql root password"
+}

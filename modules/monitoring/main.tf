@@ -29,17 +29,19 @@ resource "google_compute_instance" "monitoring_server" {
       username               = var.username
       app_name               = var.app_name
     })
-    docker_init_content = file("${path.module}/../common/docker_init.sh")
-    docker_compose_content = templatefile("${path.module}/templates/docker-compose.yml.tftpl", {
-      elasticsearch_ip  = var.elasticsearch_ip
+    docker_init_content     = file("${path.module}/../common/docker_init.sh")
+    docker_compose_content  = templatefile("${path.module}/templates/docker-compose.yml.tftpl", {
+      environment           = var.environment
+      gf_security_admin_password = var.gf_security_admin_password
     })
-    prometheus_content     = templatefile("${path.module}/templates/prometheus.yml.tftpl", {
-      spring_server_ip = var.spring_ip
-      kafka_server_ip  = var.kafka_ip
-      mysql_server_ip = var.mysql_ip
-    })
+    prometheus_content     = file("${path.module}/templates/prometheus.yml")
     jvm_dashboard_content  = file("${path.module}/templates/grafana-dashboards/jvm-dashboard.json")
     mysql_dashboard_content  = file("${path.module}/templates/grafana-dashboards/mysql-exporter.json")
     kafka_dashboard_content  = file("${path.module}/templates/grafana-dashboards/kafka-exporter.json")
   })
+
+  service_account {
+    email  = var.service_account_email
+    scopes = ["cloud-platform"] 
+  }
 }

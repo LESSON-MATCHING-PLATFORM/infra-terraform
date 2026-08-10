@@ -16,7 +16,7 @@ scrape_configs:
   # 3. 데이터베이스 상태 수집 (MySQL Exporter)
   - job_name: "mysql-database"
     static_configs:
-      - targets: ["${mysql_server_ip}:9104"]
+      - targets: ["${db_server_ip}:9104"]
 
   # 4. 전 서버 하드웨어 자원 통합 수집 (Node Exporter)
   - job_name: "gcp-infra-nodes"
@@ -24,4 +24,4 @@ scrape_configs:
       - targets:
           - "${spring_server_ip}:9100"
           - "${kafka_server_ip}:9100"
-          - "${mysql_server_ip}:9100"
+          - "${db_server_ip}:9100"

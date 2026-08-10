@@ -6,7 +6,7 @@ variable "target_tags" {
 
 variable "app_name" {
     type        = string
-    default     = "elasticsearch_app"
+    default     = "gateway_app"
     description = ""
 }
 
@@ -20,6 +20,16 @@ variable "zone" {
     type        = string
     default     = "asia-northeast3-a"
     description = "zone"
+}
+
+variable "logstash_ip" {
+  type        = string
+  description = "Filebeat 설정을 위한 logstash 서버의 IP"
+}
+
+variable "service_account_email" {
+    type        = string
+    description = "Artifact Registry에서 이미지를 풀(Pull) 받을 수 있는 권한을 가진 서비스 계정 연결"
 }
 
 variable "username" {

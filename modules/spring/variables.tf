@@ -5,21 +5,21 @@ variable "target_tags" {
 }
 
 variable "app_name" {
-    type        = string
-    default     = "spring_app"
-    description = ""
+  type        = string
+  default     = "spring_app"
+  description = ""
 }
 
 variable "machine_type" {
-    type        = string
-    default     = "e2-medium"
-    description = "VM machine type"
+  type        = string
+  default     = "e2-medium"
+  description = "VM machine type"
 }
 
 variable "zone" {
-    type        = string
-    default     = "asia-northeast3-a"
-    description = "zone"
+  type        = string
+  default     = "asia-northeast3-a"
+  description = "zone"
 }
 
 variable "logstash_ip" {
@@ -28,16 +28,21 @@ variable "logstash_ip" {
 }
 
 variable "service_account_email" {
-    type        = string
-    description = "Artifact Registry에서 이미지를 풀(Pull) 받을 수 있는 권한을 가진 서비스 계정 연결"
+  type        = string
+  description = "Artifact Registry에서 이미지를 풀(Pull) 받을 수 있는 권한을 가진 서비스 계정 연결"
 }
 
 variable "username" {
-    type        = string
-    description = ""
+  type        = string
+  description = ""
 }
 
 variable "instance_name" {
-    type        = string
-    description = ""
+  type        = string
+  description = ""
+}
+
+variable "spring_server_image" {
+  type        = string
+  description = "spring service image"
 }

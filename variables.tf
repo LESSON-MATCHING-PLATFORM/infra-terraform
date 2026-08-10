@@ -13,7 +13,7 @@ variable "region" {
   type        = string
 }
 
-variable "service_account_email" {
-  description = "The service account email attached to VM instances"
+variable "environment" {
+  description = "인프라가 배포되는 런타임 환경 구분 (예: dev, stage, prod)"
   type        = string
 }

@@ -6,7 +6,7 @@ variable "target_tags" {
 
 variable "app_name" {
     type        = string
-    default     = "elasticsearch_app"
+    default     = "logstash_app"
     description = ""
 }
 
@@ -30,4 +30,9 @@ variable "username" {
 variable "instance_name" {
     type        = string
     description = ""
+}
+
+variable "environment" {
+    type        = string
+    description = "인프라가 배포되는 런타임 환경 구분 (예: dev, stage, prod)"
 }

@@ -30,7 +30,9 @@ resource "google_compute_instance" "mysql_server" {
       app_name  = var.app_name
     })
     docker_init_content = file("${path.module}/../common/docker_init.sh")
-    docker_compose_content = file("${path.module}/templates/docker-compose.yml")
+    docker_compose_content = templatefile("${path.module}/templates/docker-compose.yml.tftpl", {
+      mysql_root_password = var.mysql_root_password
+    })
     init_sql_content       = file("${path.module}/templates/mysql_init.sql")
   })
 }

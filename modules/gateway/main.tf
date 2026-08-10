@@ -1,10 +1,10 @@
-# elasticsearch 고유 static IP
-resource "google_compute_address" "elasticsearch_ip" {
-  name = "elasticsearch-static-ip"
+# gateway 고유 static IP
+resource "google_compute_address" "gateway_ip" {
+  name = "gateway-static-ip"
 }
 
-# Elasticsearch VM 인스턴스 정의
-resource "google_compute_instance" "elasticsearch_server" {
+# Spring VM 인스턴스 정의
+resource "google_compute_instance" "gateway_server" {
   name          = var.instance_name
   machine_type  = var.machine_type
   zone          = var.zone
@@ -19,7 +19,7 @@ resource "google_compute_instance" "elasticsearch_server" {
   network_interface {
     network = "default"
     access_config {
-      nat_ip = google_compute_address.elasticsearch_ip.address
+      nat_ip = google_compute_address.gateway_ip.address
     }
   }
 
@@ -31,5 +31,13 @@ resource "google_compute_instance" "elasticsearch_server" {
     })
     docker_init_content = file("${path.module}/../common/docker_init.sh")
     docker_compose_content = file("${path.module}/templates/docker-compose.yml")
+    filebeat_yml_content   = templatefile("${path.module}/templates/filebeat.yml.tftpl", {
+      logstash_ip = var.logstash_ip
+    })
   })
+
+  service_account {
+    email  = var.service_account_email
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+  }
 }

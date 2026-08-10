@@ -1,6 +1,6 @@
 services:
   spring-app:
-    image: asia-northeast3-docker.pkg.dev/lessonplatform-495307/notification-server-repo/spring-app:latest
+    image: asia-northeast3-docker.pkg.dev/lessonplatform-495307/api-gateway-server-repo/api-gateway-app:latest
     container_name: spring-app
     ports:
       - "8080:8080"

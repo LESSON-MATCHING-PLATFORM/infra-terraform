@@ -15,7 +15,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${gf_security_admin_password}
+      - GF_SECURITY_ADMIN_PASSWORD=admin # 그라파나 초기 비번
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
@@ -23,13 +23,13 @@ services:
       - ./grafana/dashboards_json:/var/lib/grafana/dashboards:ro
     restart: always
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:9.1.0
-    container_name: kibana
+  logstash:
+    image: docker.elastic.co/logstash/logstash:9.1.0
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://es-log.${environment}.internal:9200
+      - "5044:5044"
 
 volumes:
   prometheus_data:

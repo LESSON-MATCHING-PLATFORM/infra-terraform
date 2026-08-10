@@ -1,0 +1,95 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "gcp-infra-nodes"
+    gce_sd_configs:
+      - project: lessonplatform-495307
+        zone: asia-northeast3-a
+        port: 9100
+
+    relabel_configs:
+      - source_labels: [__meta_gce_tags]
+        regex: .*node.*
+        action: keep
+
+      - source_labels: [__meta_gce_private_ip]
+        target_label: __address__
+        replacement: $1:9100
+
+      - source_labels: [__meta_gce_instance_name]
+        target_label: instance
+
+  - job_name: "gcp-gateway"
+    metrics_path: "/actuator/prometheus"
+    gce_sd_configs:
+      - project: lessonplatform-495307
+        zone: asia-northeast3-a
+        port: 8080
+
+    relabel_configs:
+      - source_labels: [__meta_gce_tags]
+        regex: .*gateway.*
+        action: keep
+
+      - source_labels: [__meta_gce_private_ip]
+        target_label: __address__
+        replacement: $1:8080
+
+      - source_labels: [__meta_gce_instance_name]
+        target_label: instance
+
+  - job_name: "gcp-spring-server"
+    metrics_path: "/actuator/prometheus"
+    gce_sd_configs:
+      - project: lessonplatform-495307
+        zone: asia-northeast3-a
+        port: 8080
+
+    relabel_configs:
+      - source_labels: [__meta_gce_tags]
+        regex: .*spring.*
+        action: keep
+
+      - source_labels: [__meta_gce_private_ip]
+        target_label: __address__
+        replacement: $1:8080
+
+      - source_labels: [__meta_gce_instance_name]
+        target_label: instance
+
+  - job_name: "gcp-mysql-server"
+    gce_sd_configs:
+      - project: lessonplatform-495307
+        zone: asia-northeast3-a
+        port: 9104
+
+    relabel_configs:
+      - source_labels: [__meta_gce_tags]
+        regex: .*mysql.*
+        action: keep
+
+      - source_labels: [__meta_gce_private_ip]
+        target_label: __address__
+        replacement: $1:9104
+
+      - source_labels: [__meta_gce_instance_name]
+        target_label: instance
+
+  - job_name: "gcp-kafka-server"
+    gce_sd_configs:
+      - project: lessonplatform-495307
+        zone: asia-northeast3-a
+        port: 9308
+
+    relabel_configs:
+      - source_labels: [__meta_gce_tags]
+        regex: .*kafka.*
+        action: keep
+
+      - source_labels: [__meta_gce_private_ip]
+        target_label: __address__
+        replacement: $1:9308
+
+      - source_labels: [__meta_gce_instance_name]
+        target_label: instance

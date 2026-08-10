@@ -1,67 +1,83 @@
-module "mysql_service" {
-  source        = "./modules/mysql"
-  username      = var.username
-  instance_name = "mysql"
-  machine_type  = "e2-medium"
-  target_tags   = ["ssh", "mysql-node", "node-exporter", "mysqld-exporter"]
+# =========================================================================
+# Provider 설정
+# =========================================================================
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
 }
 
-module "elasticsearch_and_logstash" {
-  source        = "./modules/elasticsearch"
-  username      = var.username
-  instance_name = "elasticsearch"
-  machine_type  = "e2-medium"
-  target_tags   = ["ssh", "elasticsearch", "logstash"]
+# =========================================================================
+# 기본 네트워크 설정
+# =========================================================================
+
+data "google_compute_network" "default" {
+  name = "default"
 }
 
-module "kafka_service" {
-  source        = "./modules/kafka"
-  username      = var.username
-  instance_name = "kafka"
-  machine_type  = "e2-medium"
-  target_tags   = ["ssh", "kafka-node", "node-exporter", "kafka-exporter"]
+# =========================================================================
+# Cloud DNS 설정
+# =========================================================================
+
+# 내부 Private Managed Zone 생성
+resource "google_dns_managed_zone" "private_zone" {
+  name        = "lesson-platform-private-zone"
+  dns_name    = "${var.environment}.internal."
+  description = "마이크로서비스 내부 통신용 사설 DNS 존"
+  visibility  = "private"
+
+  private_visibility_config {
+    networks {
+      network_url = data.google_compute_network.default.id
+    }
+  }
 }
 
-module "spring_service" {
-  source        = "./modules/spring"
-  username      = var.username
-  instance_name = "spring"
-  machine_type  = "e2-medium"
-  target_tags   = ["ssh", "spring-node", "node-exporter"]
-  logstash_ip   = module.elasticsearch_and_logstash.private_ip
-  service_account_email = var.service_account_email
+# 가상 도메인 레코드 (A Record) 생성 및 IP 바인딩
 
+resource "google_dns_record_set" "es_log_record" {
+  name         = "es-log.${google_dns_managed_zone.private_zone.dns_name}"
+  managed_zone = google_dns_managed_zone.private_zone.name
+  type         = "A"
+  ttl          = 300 # DNS 캐시 유지 시간 (초)
+
+  rrdatas = [module.elasticsearch.private_ip]
   depends_on = [
-    module.mysql_service,
-    module.elasticsearch_and_logstash
+    module.elasticsearch
   ]
 }
 
-module "monitoring" {
-  source            = "./modules/monitoring"
-  username          = var.username
-  instance_name     = "monitoring"
-  machine_type      = "e2-medium"
-  target_tags       = ["ssh", "prometheus", "grafana", "kibana"]
-  spring_ip         = module.spring_service.private_ip
-  mysql_ip          = module.mysql_service.private_ip
-  kafka_ip          = module.kafka_service.private_ip
-  elasticsearch_ip  = module.elasticsearch_and_logstash.private_ip
 
-  depends_on = [
-    module.spring_service,
-    module.mysql_service,
-    module.kafka_service,
-    module.elasticsearch_and_logstash
+# =========================================================================
+# 서비스 계정 및 권한
+# =========================================================================
+
+resource "google_service_account" "vm_sa" {
+  account_id   = "hwan-vm-service-account"
+  display_name = "백엔드 및 모니터링 VM 전용 서비스 계정"
+}
+
+locals {
+  vm_roles = [
+    "roles/dns.reader",
+    "roles/compute.viewer",
+    "roles/artifactregistry.reader",
+    "roles/secretmanager.secretAccessor"
   ]
 }
 
+resource "google_project_iam_member" "vm_sa_roles" {
+  for_each = toset(local.vm_roles)
+  project  = var.project_id
+  role     = each.value
+  member   = "serviceAccount:${google_service_account.vm_sa.email}"
+}
 
 # =========================================================================
 # 인프라 완공 후 Secret Manager 통합 IP 업데이트 파이프라인
 # =========================================================================
 
-
+/*
 resource "null_resource" "update_all_secrets" {
   
   # 1. 의존성 격리: 모든 핵심 인프라 VM이 완전히 생성된 후 실행을 보장합니다.
@@ -128,4 +144,4 @@ resource "null_resource" "update_all_secrets" {
     EOT
   }
 }
-
+*/
