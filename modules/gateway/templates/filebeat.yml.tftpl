@@ -2,10 +2,14 @@ filebeat.inputs:
   - type: log
     enabled: true
     paths:
-      - /usr/share/filebeat/logs/api-gateway-service-log.log
+      - /usr/share/filebeat/logs/*.log
 
     start_position: beginning
     sincedb_path: /dev/null
+    fields:
+      service: ${service}
+      environment: ${environment}
+    fields_under_root: true
 
 output.logstash:
   hosts: ["${logstash_ip}:5044"]

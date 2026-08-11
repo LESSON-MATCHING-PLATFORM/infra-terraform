@@ -36,6 +36,8 @@ resource "google_compute_instance" "spring_server" {
     })
     filebeat_yml_content = templatefile("${path.module}/templates/filebeat.yml.tftpl", {
       logstash_ip = var.logstash_ip
+      service     = var.instance_name
+      environment = var.environment
     })
   })
 

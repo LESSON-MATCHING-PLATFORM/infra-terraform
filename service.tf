@@ -5,6 +5,7 @@ module "api_gateway_service" {
   machine_type          = "e2-medium"
   target_tags           = ["gateway", "ssh", "spring", "spring-node", "node-exporter"]
   logstash_ip           = module.logstash.private_ip
+  environment           = var.environment
   service_account_email = google_service_account.vm_sa.email
 
   depends_on = [
@@ -20,6 +21,7 @@ module "backend_service" {
   target_tags           = ["ssh", "spring", "spring-node", "node-exporter"]
   static_ip_name        = "lesson-backend-static-ip"
   logstash_ip           = module.logstash.private_ip
+  environment           = var.environment
   service_account_email = google_service_account.vm_sa.email
   spring_server_image   = "asia-northeast3-docker.pkg.dev/${var.project_id}/backend-server-repo/spring-app:latest"
   spring_environment    = "      SPRING_PROFILES_ACTIVE: gcp"
@@ -39,6 +41,7 @@ module "notification_service" {
   target_tags           = ["ssh", "spring", "spring-node", "node-exporter"]
   static_ip_name        = "spring-static-ip"
   logstash_ip           = module.logstash.private_ip
+  environment           = var.environment
   service_account_email = google_service_account.vm_sa.email
   spring_server_image   = "asia-northeast3-docker.pkg.dev/lessonplatform-495307/notification-server-repo/spring-app:latest"
 

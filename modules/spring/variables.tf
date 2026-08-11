@@ -27,6 +27,11 @@ variable "logstash_ip" {
   description = "Filebeat 설정을 위한 logstash 서버의 IP"
 }
 
+variable "environment" {
+  type        = string
+  description = "인프라가 배포되는 런타임 환경 구분 (예: dev, stage, prod)"
+}
+
 variable "service_account_email" {
   type        = string
   description = "Artifact Registry에서 이미지를 풀(Pull) 받을 수 있는 권한을 가진 서비스 계정 연결"
