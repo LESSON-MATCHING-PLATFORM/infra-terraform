@@ -13,6 +13,8 @@ if [ ! -z "${filebeat_yml_content}" ]; then
 cat << 'EOF' > filebeat.yml
 ${filebeat_yml_content}
 EOF
+sudo chown root:root filebeat.yml
+sudo chmod 644 filebeat.yml
 fi
 
 # 기존에 가동 중이던 컨테이너가 있다면 안전하게 내리고, 최신 이미지를 당긴 후 올립니다.
