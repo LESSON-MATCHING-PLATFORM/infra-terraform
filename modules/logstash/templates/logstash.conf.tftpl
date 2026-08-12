@@ -12,6 +12,113 @@ filter {
       add_field => { "service" => "unknown-service" }
     }
   }
+
+  mutate {
+    gsub => [
+      "message", "\x1B\[[0-9;]*[A-Za-z]", ""
+    ]
+  }
+
+  grok {
+    match => {
+      "message" => [
+        "^%%{TIMESTAMP_ISO8601:logTimestamp} \[%%{DATA:processId}\] \[%%{DATA:springAppName}\] \[%%{DATA:threadName}\] %%{LOGLEVEL:level}\s+\[%%{DATA:requestId}\](?: \[%%{DATA:eventId}\])? %%{DATA:logger} : %%{GREEDYDATA:appMessage}$"
+      ]
+    }
+    tag_on_failure => ["_spring_log_parse_failure"]
+  }
+
+  if [logTimestamp] {
+    date {
+      match => ["logTimestamp", "yyyy-MM-dd HH:mm:ss"]
+      target => "@timestamp"
+      timezone => "UTC"
+    }
+  }
+
+  if [requestId] == "" {
+    mutate {
+      remove_field => ["requestId"]
+    }
+  }
+
+  if [eventId] == "" {
+    mutate {
+      remove_field => ["eventId"]
+    }
+  }
+
+  if [level] {
+    mutate {
+      add_field => {
+        "[log][level]" => "%%{level}"
+      }
+    }
+  }
+
+  if [logger] {
+    mutate {
+      add_field => {
+        "[log][logger]" => "%%{logger}"
+      }
+    }
+  }
+
+  if [appMessage] =~ /^RequestLogMessage/ {
+    grok {
+      match => {
+        "appMessage" => "^RequestLogMessage\[httpMethod=%%{WORD:httpMethod}, requestUri=%%{DATA:requestUri}, requestBody=%%{GREEDYDATA:requestBody}\]\s*$"
+      }
+      tag_on_failure => ["_request_log_parse_failure"]
+    }
+  } else if [appMessage] =~ /^ResponseLogMessage/ {
+    grok {
+      match => {
+        "appMessage" => "^ResponseLogMessage\[httpStatus=%%{INT:httpStatus}, responseBody=%%{GREEDYDATA:responseBody}\]\s*$"
+      }
+      tag_on_failure => ["_response_log_parse_failure"]
+    }
+
+    mutate {
+      convert => {
+        "httpStatus" => "integer"
+      }
+    }
+  } else if [appMessage] =~ /^Gateway request/ {
+    grok {
+      match => {
+        "appMessage" => "^Gateway request %%{WORD:gatewayRequestPhase} %%{WORD:httpMethod} %%{DATA:requestUri}\s*$"
+      }
+      tag_on_failure => ["_gateway_log_parse_failure"]
+    }
+  }
+
+  if [httpMethod] {
+    mutate {
+      add_field => {
+        "[http][request][method]" => "%%{httpMethod}"
+      }
+    }
+  }
+
+  if [requestUri] {
+    mutate {
+      add_field => {
+        "[url][path]" => "%%{requestUri}"
+      }
+    }
+  }
+
+  if [httpStatus] {
+    mutate {
+      add_field => {
+        "[http][response][status_code]" => "%%{httpStatus}"
+      }
+      convert => {
+        "[http][response][status_code]" => "integer"
+      }
+    }
+  }
 }
 
 # 3. Output
