@@ -17,3 +17,9 @@ variable "environment" {
   description = "인프라가 배포되는 런타임 환경 구분 (예: dev, stage, prod)"
   type        = string
 }
+
+variable "firebase_dry_run" {
+  description = "Whether Firebase Cloud Messaging should validate messages without delivering them"
+  type        = bool
+  default     = false
+}

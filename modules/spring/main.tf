@@ -32,7 +32,7 @@ resource "google_compute_instance" "spring_server" {
     docker_init_content = file("${path.module}/../common/docker_init.sh")
     docker_compose_content = templatefile("${path.module}/templates/docker-compose.yml.tftpl", {
       spring_server_image = var.spring_server_image
-      spring_environment  = var.spring_environment
+      spring_environment  = length(var.spring_environment) == 0 ? "" : jsonencode(var.spring_environment)
     })
     filebeat_yml_content = templatefile("${path.module}/templates/filebeat.yml.tftpl", {
       logstash_ip = var.logstash_ip

@@ -58,7 +58,7 @@ variable "spring_server_image" {
 }
 
 variable "spring_environment" {
-  type        = string
-  default     = ""
-  description = "Optional docker-compose environment block for the spring container"
+  type        = map(string)
+  default     = {}
+  description = "Optional environment variables for the spring container"
 }
