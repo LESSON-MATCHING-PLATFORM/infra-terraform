@@ -44,6 +44,10 @@ module "notification_service" {
   environment           = var.environment
   service_account_email = google_service_account.vm_sa.email
   spring_server_image   = "asia-northeast3-docker.pkg.dev/lessonplatform-495307/notification-server-repo/spring-app:latest"
+  spring_environment    = <<-EOT
+      - FIREBASE_PROJECT_ID=${var.project_id}
+      - GOOGLE_CLOUD_PROJECT=${var.project_id}
+  EOT
 
   depends_on = [
     module.mysql_service,

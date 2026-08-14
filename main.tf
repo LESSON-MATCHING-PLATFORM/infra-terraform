@@ -62,7 +62,8 @@ locals {
     "roles/dns.reader",
     "roles/compute.viewer",
     "roles/artifactregistry.reader",
-    "roles/secretmanager.secretAccessor"
+    "roles/secretmanager.secretAccessor",
+    "roles/firebasecloudmessaging.admin"
   ]
 }
 
