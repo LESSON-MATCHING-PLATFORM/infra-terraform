@@ -8,6 +8,12 @@ locals {
   notification_database_name = "fillinv_notification"
   ledger_database_name       = "fillinv_ledger"
   mysql_instance_zone        = "asia-northeast3-a"
+  mysql_service_host         = "mysql.${local.mysql_instance_zone}.c.${var.project_id}.internal"
+  kafka_service_host         = "kafka.${local.mysql_instance_zone}.c.${var.project_id}.internal"
+  logstash_service_host      = "logstash.${local.mysql_instance_zone}.c.${var.project_id}.internal"
+  backend_service_host       = "lesson-backend.${local.mysql_instance_zone}.c.${var.project_id}.internal"
+  notification_service_host  = "notification-service.${local.mysql_instance_zone}.c.${var.project_id}.internal"
+  ledger_service_host        = "lesson-ledger.${local.mysql_instance_zone}.c.${var.project_id}.internal"
 }
 
 module "kafka_service" {
@@ -16,6 +22,7 @@ module "kafka_service" {
   instance_name = "kafka"
   machine_type  = "e2-medium"
   target_tags   = ["ssh", "kafka", "kafka-node", "node-exporter", "kafka-exporter"]
+  internal_host = local.kafka_service_host
 }
 
 module "mysql_service" {
@@ -33,37 +40,6 @@ module "elasticsearch" {
   instance_name = "elasticsearch"
   machine_type  = "e2-medium"
   target_tags   = ["ssh", "elasticsearch"]
-}
-
-resource "null_resource" "update_all_secrets" {
-
-  depends_on = [
-    module.mysql_service,
-    module.kafka_service
-  ]
-
-  triggers = {
-    mysql_private = module.mysql_service.private_ip
-    mysql_public  = module.mysql_service.public_ip
-
-    kafka_private = module.kafka_service.private_ip
-    kafka_public  = module.kafka_service.public_ip
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-
-    printf "${module.mysql_service.public_ip}" | \
-    gcloud secrets versions add DB_HOST --data-file=-
-    echo "✅ DB VM IP 시크릿 버전 갱신 완료"
-
-    printf "${module.kafka_service.public_ip}" | \
-    gcloud secrets versions add KAFKA_BOOTSTRAP_SERVERS --data-file=-
-    echo "✅ KAFKA VM IP 시크릿 버전 갱신 완료"
-
-    EOT
-  }
-
 }
 
 resource "null_resource" "ensure_service_databases" {
@@ -84,48 +60,9 @@ resource "null_resource" "ensure_service_databases" {
     gcloud compute ssh ${var.username}@mysql \
       --project ${var.project_id} \
       --zone ${local.mysql_instance_zone} \
+      --tunnel-through-iap \
       --command "docker exec mysql-server sh -c 'mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE DATABASE IF NOT EXISTS ${local.backend_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS ${local.notification_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS ${local.ledger_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON ${local.ledger_database_name}.* TO \'root\'@\'%\'; FLUSH PRIVILEGES;\"'"
     echo "✅ Backend/Notification/Ledger DB 분리 생성 확인 완료"
-
-    EOT
-  }
-}
-
-resource "null_resource" "update_backend_host_secret" {
-  depends_on = [
-    module.backend_service
-  ]
-
-  triggers = {
-    backend_private = module.backend_service.private_ip
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-
-    printf "${module.backend_service.private_ip}" | \
-    gcloud secrets versions add BACKEND_HOST --data-file=-
-    echo "✅ Backend VM IP 시크릿 버전 갱신 완료"
-
-    EOT
-  }
-}
-
-resource "null_resource" "update_notification_host_secret" {
-  depends_on = [
-    module.notification_service
-  ]
-
-  triggers = {
-    notification_private = module.notification_service.private_ip
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-
-    printf "${module.notification_service.private_ip}" | \
-    gcloud secrets versions add NOTIFICATION_HOST --data-file=-
-    echo "✅ Notification VM IP 시크릿 버전 갱신 완료"
 
     EOT
   }

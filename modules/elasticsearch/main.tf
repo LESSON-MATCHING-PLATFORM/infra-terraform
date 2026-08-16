@@ -1,8 +1,3 @@
-# elasticsearch 고유 static IP
-resource "google_compute_address" "elasticsearch_ip" {
-  name = "elasticsearch-static-ip"
-}
-
 # Elasticsearch VM 인스턴스 정의
 resource "google_compute_instance" "elasticsearch_server" {
   name          = var.instance_name
@@ -18,9 +13,6 @@ resource "google_compute_instance" "elasticsearch_server" {
 
   network_interface {
     network = "default"
-    access_config {
-      nat_ip = google_compute_address.elasticsearch_ip.address
-    }
   }
 
   metadata_startup_script = templatefile("${path.module}/templates/setup.sh.tftpl", {

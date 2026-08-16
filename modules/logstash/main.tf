@@ -1,8 +1,3 @@
-# logstash 고유 static IP
-resource "google_compute_address" "logstash_ip" {
-  name = "logstash-static-ip"
-}
-
 # logstash VM 인스턴스 정의
 resource "google_compute_instance" "logstash_server" {
   name          = var.instance_name
@@ -18,9 +13,6 @@ resource "google_compute_instance" "logstash_server" {
 
   network_interface {
     network = "default"
-    access_config {
-      nat_ip = google_compute_address.logstash_ip.address
-    }
   }
 
   metadata_startup_script = templatefile("${path.module}/templates/setup.sh.tftpl", {

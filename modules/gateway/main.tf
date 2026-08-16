@@ -30,7 +30,11 @@ resource "google_compute_instance" "gateway_server" {
       app_name = var.app_name
     })
     docker_init_content    = file("${path.module}/../common/docker_init.sh")
-    docker_compose_content = file("${path.module}/templates/docker-compose.yml")
+    docker_compose_content = templatefile("${path.module}/templates/docker-compose.yml.tftpl", {
+      backend_host      = var.backend_host
+      notification_host = var.notification_host
+      ledger_host       = var.ledger_host
+    })
     filebeat_yml_content = templatefile("${path.module}/templates/filebeat.yml.tftpl", {
       logstash_ip = var.logstash_ip
       service     = var.instance_name

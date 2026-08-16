@@ -28,6 +28,11 @@ variable "username" {
 }
 
 variable "instance_name" {
-    type        = string
-    description = ""
+  type        = string
+  description = ""
+}
+
+variable "internal_host" {
+  type        = string
+  description = "Internal DNS name advertised by Kafka"
 }

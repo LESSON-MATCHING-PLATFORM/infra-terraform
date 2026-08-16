@@ -1,8 +1,3 @@
-# kafka 고유 static IP
-resource "google_compute_address" "kafka_ip" {
-  name = "kafka-static-ip"
-}
-
 # kafka VM 인스턴스 정의
 resource "google_compute_instance" "kafka_server" {
   name          = var.instance_name
@@ -18,9 +13,6 @@ resource "google_compute_instance" "kafka_server" {
 
   network_interface {
     network = "default"
-    access_config {
-      nat_ip = google_compute_address.kafka_ip.address
-    }
   }
 
   metadata_startup_script = templatefile("${path.module}/templates/setup.sh.tftpl", {
@@ -31,7 +23,7 @@ resource "google_compute_instance" "kafka_server" {
     })
     docker_init_content = file("${path.module}/../common/docker_init.sh")
     docker_compose_content = templatefile("${path.module}/templates/docker-compose.yml.tftpl", {
-      external_ip = google_compute_address.kafka_ip.address
+      internal_host = var.internal_host
     })
   })
 }

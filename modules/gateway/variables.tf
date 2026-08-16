@@ -46,3 +46,18 @@ variable "instance_name" {
   type        = string
   description = ""
 }
+
+variable "backend_host" {
+  type        = string
+  description = "Internal DNS name of the backend service"
+}
+
+variable "notification_host" {
+  type        = string
+  description = "Internal DNS name of the notification service"
+}
+
+variable "ledger_host" {
+  type        = string
+  description = "Internal DNS name of the ledger service"
+}
