@@ -13,6 +13,7 @@ resource "google_compute_instance" "mysql_server" {
 
   network_interface {
     network = "default"
+    access_config {}
   }
 
   metadata_startup_script = templatefile("${path.module}/templates/setup.sh.tftpl", {
