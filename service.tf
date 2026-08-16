@@ -30,6 +30,7 @@ module "backend_service" {
     SPRING_PROFILES_ACTIVE  = "gcp"
     DB_HOST                 = local.mysql_service_host
     KAFKA_BOOTSTRAP_SERVERS = local.kafka_service_host
+    LEDGER_HOST             = local.ledger_service_host
   }
 
   depends_on = [
