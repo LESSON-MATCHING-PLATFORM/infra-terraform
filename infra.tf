@@ -6,6 +6,7 @@ data "google_secret_manager_secret_version" "db_password" {
 locals {
   backend_database_name      = "fillinv_backend"
   notification_database_name = "fillinv_notification"
+  ledger_database_name       = "fillinv_ledger"
   mysql_instance_zone        = "asia-northeast3-a"
 }
 
@@ -74,6 +75,7 @@ resource "null_resource" "ensure_service_databases" {
     mysql_private         = module.mysql_service.private_ip
     backend_database      = local.backend_database_name
     notification_database = local.notification_database_name
+    ledger_database       = local.ledger_database_name
   }
 
   provisioner "local-exec" {
@@ -82,8 +84,8 @@ resource "null_resource" "ensure_service_databases" {
     gcloud compute ssh ${var.username}@mysql \
       --project ${var.project_id} \
       --zone ${local.mysql_instance_zone} \
-      --command "docker exec mysql-server sh -c 'mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE DATABASE IF NOT EXISTS ${local.backend_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS ${local.notification_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"'"
-    echo "✅ Backend/Notification DB 분리 생성 확인 완료"
+      --command "docker exec mysql-server sh -c 'mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"CREATE DATABASE IF NOT EXISTS ${local.backend_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS ${local.notification_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS ${local.ledger_database_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON ${local.ledger_database_name}.* TO \'root\'@\'%\'; FLUSH PRIVILEGES;\"'"
+    echo "✅ Backend/Notification/Ledger DB 분리 생성 확인 완료"
 
     EOT
   }
